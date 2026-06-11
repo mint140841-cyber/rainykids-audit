@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rainy Kids Clinic — Branch Audit</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:#f0f4f8;color:#1a2332;min-height:100vh}
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
+
+/* SIDEBAR */
+.sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:#1a3a6b;display:flex;flex-direction:column;z-index:100}
+.sidebar-brand{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.sidebar-brand .name{color:#fff;font-size:16px;font-weight:700}
+.sidebar-brand .sub{color:rgba(255,255,255,0.5);font-size:12px}
+.sidebar-user{padding:16px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.sidebar-user .avatar{width:36px;height:36px;border-radius:50%;background:#2d6be4;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0}
+.sidebar-user .uname{color:#fff;font-size:13px;font-weight:600}
+.sidebar-user .urole{color:rgba(255,255,255,0.5);font-size:11px}
+.sidebar-nav{flex:1;padding:12px 0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 18px;color:rgba(255,255,255,0.65);font-size:14px;cursor:pointer;transition:all .15s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,0.08);color:#fff}
+.nav-item.active{background:rgba(255,255,255,0.12);color:#fff;border-left-color:#4a9eff}
+.nav-item svg{width:18px;height:18px;flex-shrink:0}
+
+/* MAIN */
+.main{margin-left:220px;min-height:100vh}
+.topbar{background:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:50}
+.topbar h1{font-size:20px;font-weight:700;color:#1a3a6b}
+.topbar .sub{font-size:13px;color:#64748b;margin-top:2px}
+.content{padding:24px 28px}
+
+/* PAGE */
+.page{display:none}
+.page.active{display:block}
+
+/* CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:12px;padding:20px 24px;border:1px solid #e2e8f0}
+.stat-card .val{font-size:32px;font-weight:700;margin-bottom:4px}
+.stat-card .lbl{font-size:13px;color:#64748b}
+.c-blue{color:#2d6be4}.c-orange{color:#f97316}.c-purple{color:#7c3aed}.c-red{color:#dc2626}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.card{background:#fff;border-radius:12px;padding:20px;border:1px solid #e2e8f0}
+.card-title{font-size:14px;font-weight:600;color:#1a2332;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bar-label{font-size:13px;color:#374151;width:130px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;background:#f1f5f9;border-radius:20px;height:10px;overflow:hidden}
+.bar-fill{height:100%;border-radius:20px;transition:width .4s}
+.bar-num{font-size:13px;font-weight:600;color:#374151;width:24px;text-align:right;flex-shrink:0}
+
+/* STATUS */
+.status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.s-healthy{background:#dcfce7;color:#166534}
+.s-warn{background:#fef9c3;color:#854d0e}
+.s-crit{background:#fee2e2;color:#991b1b}
+
+/* FORM */
+.form-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.branch-tabs{display:flex;gap:8px;flex-wrap:wrap}
+.branch-tab{padding:8px 18px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:14px;font-weight:500;cursor:pointer;color:#64748b;transition:all .15s}
+.branch-tab.active{background:#1a3a6b;color:#fff;border-color:#1a3a6b}
+.branch-tab .dot{margin-right:4px}
+
+.section-block{background:#fff;border-radius:12px;margin-bottom:16px;border:1px solid #e2e8f0;overflow:hidden}
+.section-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+.section-hdr h3{font-size:14px;font-weight:600;color:#1a2332}
+.section-pct{background:#dbeafe;color:#1d4ed8;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px}
+.q-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid #f1f5f9}
+.q-row:last-child{border-bottom:none}
+.q-text{flex:1;font-size:13px;color:#1a2332;line-height:1.5}
+.q-note{font-size:11px;color:#94a3b8;margin-top:2px}
+.q-btns{display:flex;gap:6px;flex-shrink:0;margin-top:2px}
+.qb{padding:5px 12px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:#64748b;transition:all .15s}
+.qb:hover{border-color:#94a3b8}
+.qb.yes.on{background:#dcfce7;color:#166534;border-color:#86efac}
+.qb.no.on{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
+.qb.na.on{background:#f1f5f9;color:#475569;border-color:#cbd5e1}
+
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px 18px}
+.form-field label{font-size:12px;color:#64748b;margin-bottom:4px;display:block}
+.form-field input,.form-field select,.form-field textarea{width:100%;padding:8px 12px;border-radius:8px;border:1px solid #e2e8f0;font-size:13px;font-family:'Sarabun',sans-serif;background:#fff;color:#1a2332}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus{outline:none;border-color:#2d6be4}
+.form-field textarea{resize:vertical;height:70px}
+
+.action-bar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.btn{padding:9px 18px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#374151;font-family:'Sarabun',sans-serif;display:flex;align-items:center;gap:6px;transition:all .15s}
+.btn:hover{background:#f8fafc}
+.btn.primary{background:#1a3a6b;color:#fff;border-color:#1a3a6b}
+.btn.primary:hover{background:#1e4a85}
+.btn.success{background:#166534;color:#fff;border-color:#166534}
+.btn.danger{background:#fff;color:#dc2626;border-color:#fca5a5}
+
+/* SUMMARY TABLE */
+.summary-table{width:100%;border-collapse:collapse;font-size:13px}
+.summary-table th{background:#f8fafc;padding:10px 14px;text-align:left;font-weight:600;color:#374151;border-bottom:2px solid #e2e8f0}
+.summary-table td{padding:10px 14px;border-bottom:1px solid #f1f5f9;color:#1a2332}
+.summary-table tr:hover td{background:#f8fafc}
+
+/* REPORT */
+.report-card{background:#fff;border-radius:12px;padding:24px;border:1px solid #e2e8f0;margin-bottom:16px}
+.report-card h2{font-size:16px;font-weight:700;color:#1a3a6b;margin-bottom:16px;border-bottom:2px solid #f0f4f8;padding-bottom:10px}
+.r-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f8fafc;font-size:13px}
+.r-row:last-child{border-bottom:none}
+.r-key{color:#64748b}
+.r-val{font-weight:600;color:#1a2332}
+.r-yes{color:#166534}.r-no{color:#dc2626}.r-na{color:#94a3b8}
+
+/* ALERT */
+.toast{position:fixed;top:20px;right:24px;background:#1a3a6b;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* SCORE BAR */
+.score-row{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.score-row .slbl{font-size:12px;color:#64748b;width:160px;flex-shrink:0}
+.score-row .sbar{flex:1;background:#f1f5f9;border-radius:20px;height:8px;overflow:hidden}
+.score-row .sfill{height:100%;border-radius:20px;background:#2d6be4;transition:width .4s}
+.score-row .snum{font-size:12px;font-weight:600;color:#374151;width:36px;text-align:right}
+
+@media(max-width:900px){
+  .sidebar{width:60px}
+  .sidebar-brand .name,.sidebar-brand .sub,.sidebar-user .uname,.sidebar-user .urole,.nav-item span{display:none}
+  .main{margin-left:60px}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .grid2{grid-template-columns:1fr}
+  .info-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="name">Rainy Kids</div>
+    <div class="sub">Clinic</div>
+  </div>
+  <div class="sidebar-user">
+    <div class="avatar">AM</div>
+    <div>
+      <div class="uname">Area Manager</div>
+      <div class="urole">ผู้จัดการภูมิภาค</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-item active" onclick="showPage('dashboard')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="showPage('audit')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span>กรอกแบบตรวจ</span>
+    </div>
+    <div class="nav-item" onclick="showPage('report')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>รายงาน</span>
+    </div>
+    <div class="nav-item" onclick="showPage('summary')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>เปรียบเทียบสาขา</span>
+    </div>
+  </nav>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <h1 id="page-title">Dashboard</h1>
+      <div class="sub" id="page-sub">สรุปสถิติเรียลไทม์</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn primary" onclick="showPage('audit')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        เริ่มตรวจสอบ
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="stat-grid" id="dash-stats"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">📊 คะแนนรายสาขา</div>
+          <div id="dash-branch-bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🏆 คะแนนราย Section</div>
+          <div id="dash-section-bars"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 ตารางสรุปสาขา</div>
+        <div id="dash-table-wrap" style="overflow-x:auto"></div>
+      </div>
+    </div>
+
+    <!-- AUDIT FORM -->
+    <div class="page" id="page-audit">
+      <div class="branch-tabs" id="branch-tabs-top" style="margin-bottom:16px"></div>
+      <div class="action-bar">
+        <button class="btn primary" onclick="saveAudit()">💾 บันทึก</button>
+        <button class="btn success" onclick="copyReport()">📋 คัดลอกรายงาน</button>
+        <button class="btn" onclick="exportHTML()">⬇ ดาวน์โหลด</button>
+        <button class="btn danger" onclick="clearBranch()">🗑 ล้างสาขานี้</button>
+      </div>
+
+      <!-- Score summary -->
+      <div class="section-block" style="margin-bottom:16px">
+        <div class="section-hdr"><h3>📈 คะแนนรวมสาขานี้</h3><span id="total-score-badge" class="status-badge s-healthy">0%</span></div>
+        <div style="padding:16px 18px" id="live-scores"></div>
+      </div>
+
+      <!-- General info -->
+      <div class="section-block">
+        <div class="section-hdr"><h3>ข้อมูลทั่วไป</h3></div>
+        <div class="info-grid">
+          <div class="form-field"><label>ผู้ตรวจ</label><input id="f-inspector" oninput="autoSave()" placeholder="ชื่อผู้ตรวจ"></div>
+          <div class="form-field"><label>ผู้จัดการสาขา</label><input id="f-manager" oninput="autoSave()" placeholder="ชื่อผู้จัดการ"></div>
+          <div class="form-field"><label>วันที่ตรวจ</label><input id="f-date" type="date" oninput="autoSave()"></div>
+          <div class="form-field"><label>จำนวนพนักงาน</label><input id="f-staff" type="number" min="1" oninput="autoSave()" placeholder="คน"></div>
+          <div class="form-field"><label>Manager Control Score (0–10)</label>
+            <select id="f-mgscore" onchange="autoSave()">
+              <option value="10">10 — คุมทีมได้ดีเยี่ยม</option>
+              <option value="9">9 — คุมทีมอยู่ + follow งาน</option>
+              <option value="8" selected>8 — คุมได้เป็นส่วนใหญ่</option>
+              <option value="7">7 — คุมได้บางส่วน</option>
+              <option value="6">6 — เริ่มหลุด</option>
+              <option value="5">5 — เริ่มหลุด</option>
+              <option value="4">4 — คุมไม่ได้</option>
+              <option value="3">3 — คุมไม่ได้</option>
+              <option value="2">2 — คุมไม่ได้</option>
+              <option value="1">1 — คุมไม่ได้</option>
+              <option value="0">0 — คุมไม่ได้เลย</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="question-sections"></div>
+
+      <!-- Root Cause & Action -->
+      <div class="section-block">
+        <div class="section-hdr"><h3>🔍 Root Cause & Action Plan</h3></div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+          <div class="form-field">
+            <label>Root Cause (เลือก 1 หลัก)</label>
+            <select id="f-rootcause" onchange="autoSave()">
+              <option value="">-- เลือก Root Cause --</option>
+              <option>ขาดการสื่อสารในทีม</option>
+              <option>ขาดการฝึกอบรม</option>
+              <option>SOP ไม่ชัดเจน</option>
+              <option>กำลังคนไม่เพียงพอ</option>
+              <option>อุปกรณ์ขาด/ชำรุด</option>
+              <option>ผู้จัดการไม่ติดตาม</option>
+              <option>อื่น ๆ</option>
+            </select>
+          </div>
+          <div class="form-field"><label>Action 1</label><textarea id="f-action1" oninput="autoSave()" placeholder="ระบุ action..."></textarea></div>
+          <div class="form-field"><label>Action 2</label><textarea id="f-action2" oninput="autoSave()" placeholder="ระบุ action..."></textarea></div>
+          <div class="form-field"><label>Action 3</label><textarea id="f-action3" oninput="autoSave()" placeholder="ระบุ action..."></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT -->
+    <div class="page" id="page-report">
+      <div class="branch-tabs" id="branch-tabs-report" style="margin-bottom:16px"></div>
+      <div id="report-content"></div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="page" id="page-summary">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">🏅 เปรียบเทียบคะแนนทุกสาขา</div>
+        <div id="summary-content"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BRANCHES = ['เชียงใหม่','แพร่','ลำปาง','ราชพฤกษ์'];
+
+const SECTIONS = [
+  {id:'s1',label:'Section 1 — Therapy Quality',weight:20,color:'#7c3aed',questions:[
+    {id:'q1_1',label:'Match Development Goal',note:'Session objective สอดคล้องกับ treatment plan'},
+    {id:'q1_2',label:'Therapist อธิบาย Objective ได้',note:'Therapist อธิบาย objective ได้ชัดเจน'},
+    {id:'q1_3',label:'Therapist Consult ตาม SOP',note:'ชื่นชมเด็ก / เน้นฝึกอะไร / สิ่งที่ต้องเพิ่ม / ครั้งหน้า / การบ้าน'},
+  ]},
+  {id:'s2',label:'Section 2 — Service Experience',weight:25,color:'#2d6be4',questions:[
+    {id:'q2_1',label:'First Impression greeting ภายใน 10 นาที',note:'"สวัสดีค่ะคุณแม่ เชิญนั่งรอด้านในได้เลยค่ะ"'},
+    {id:'q2_2',label:'Therapist รับเด็กภายใน 5–10 นาที',note:''},
+    {id:'q2_3',label:'แอดมินแจ้งนัดหมายล่วงหน้า',note:'แจ้งเวลานัดหมายล่วงหน้าให้เคสประเมิน'},
+    {id:'q2_4',label:'จุดน้ำ / brochure / ของเล่น / มุมหนังสือพร้อม',note:''},
+    {id:'q2_5',label:'แอดมินลุกดูแลเมื่อเด็กเดินไปประตู',note:''},
+  ]},
+  {id:'s3',label:'Section 3 — Safety & Compliance',weight:25,color:'#dc2626',questions:[
+    {id:'q3_1',label:'ไม่มีอุปกรณ์เสี่ยงในพื้นที่ Gross Motor',note:'ไม่มีกรรไกร/มีด/ไขขวง/มุมเสาไม่มีนุ่มนิ่มบนพื้น'},
+    {id:'q3_2',label:'ทางเดินปลอดภัย พื้นไม่ลื่น ไม่มีน้ำหก',note:''},
+    {id:'q3_3',label:'ห้องกิจกรรมไม่มีเสาเปลือย/จุดเสี่ยง',note:''},
+    {id:'q3_4',label:'ไม่มี Incident/Near Miss เดือนนี้',note:''},
+    {id:'q3_5',label:'พนักงานทราบว่า Near Miss ต้องรายงาน',note:'สุ่มถาม 3 คน'},
+    {id:'q3_6',label:'Complaint มี Incident รองรับ',note:''},
+    {id:'q3_7',label:'Incident ปิด RCA ภายในกำหนด',note:''},
+    {id:'q3_8',label:'มีการติดตาม Action หลัง Incident',note:''},
+  ]},
+  {id:'s4',label:'Section 4 — Team Reliability',weight:20,color:'#f97316',questions:[
+    {id:'q4_1',label:'พนักงานมี interaction ระหว่างกัน',note:'สุ่มถาม/สังเกต 5 คน'},
+    {id:'q4_2',label:'พนักงานมีส่วนร่วมในทีม',note:''},
+    {id:'q4_3',label:'ทีม support กันระหว่างงาน',note:'สุ่มสังเกต 5 คน'},
+    {id:'q4_4',label:'พนักงานรับทราบประกาศ/นโยบายล่าสุด',note:'ถาม 5 คน คำถามเดียวกัน'},
+    {id:'q4_5',label:'พนักงานทราบขั้นตอนรับ Complaint',note:''},
+    {id:'q4_6',label:'Ownership: พบขยะ/ของหมด แก้ไขเอง',note:''},
+    {id:'q4_7',label:'Ownership: แก้ปัญหาก่อนเรียก Manager',note:''},
+    {id:'q4_8',label:'Team Briefing มี participation',note:''},
+    {id:'q4_9',label:'Team Briefing ทุกคน participation',note:''},
+    {id:'q4_10',label:'ทีมร่วมมืองานที่ได้รับมอบหมาย',note:'เช่น คุยเคสฝึกประจำสัปดาห์'},
+  ]},
+  {id:'s5',label:'Section 5 — Management Control',weight:10,color:'#0891b2',questions:[
+    {id:'q5_1',label:'มี Morning Briefing ก่อนเริ่มงาน',note:''},
+    {id:'q5_2',label:'ผู้จัดการรับรู้และติดตามปัญหาสาขา',note:''},
+    {id:'q5_3',label:'KPI Board อัปเดตล่าสุด',note:''},
+    {id:'q5_4',label:'ผู้จัดการรักษาตารางฝึก ≥80%',note:''},
+  ]},
+];
+
+// STATE
+let state = JSON.parse(localStorage.getItem('rk_audit_state') || 'null') || {};
+BRANCHES.forEach(b=>{
+  if(!state[b]) state[b]={inspector:'',manager:'',date:'',staffCount:'',mgScore:8,rootCause:'',action1:'',action2:'',action3:'',answers:{}};
+  SECTIONS.forEach(s=>s.questions.forEach(q=>{
+    if(state[b].answers[q.id]===undefined) state[b].answers[q.id]=null;
+  }));
+});
+
+let activeBranch = BRANCHES[0];
+let activePage = 'dashboard';
+let reportBranch = BRANCHES[0];
+
+function save(){
+  localStorage.setItem('rk_audit_state', JSON.stringify(state));
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+function getScore(branch){
+  const a=state[branch].answers;
+  const secs=SECTIONS.map(s=>{
+    const yes=s.questions.filter(q=>a[q.id]==='yes').length;
+    const counted=s.questions.filter(q=>a[q.id]==='yes'||a[q.id]==='no').length;
+    const pct=counted>0?Math.round(yes/counted*100):0;
+    return {pct,label:s.label,weight:s.weight,color:s.color};
+  });
+  const total=Math.round(secs.reduce((acc,s)=>acc+s.pct*s.weight/100,0));
+  return {total,secs};
+}
+
+function statusBadge(score){
+  if(score>=85) return '<span class="status-badge s-healthy">🟢 Healthy</span>';
+  if(score>=70) return '<span class="status-badge s-warn">🟡 ต้องปรับ</span>';
+  return '<span class="status-badge s-crit">🔴 ต้องลงแก้</span>';
+}
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const navMap={dashboard:0,audit:1,report:2,summary:3};
+  document.querySelectorAll('.nav-item')[navMap[name]]?.classList.add('active');
+  const titles={dashboard:'Dashboard',audit:'กรอกแบบตรวจสอบ',report:'รายงานสาขา',summary:'เปรียบเทียบสาขา'};
+  const subs={dashboard:'สรุปสถิติเรียลไทม์',audit:'ตรวจสอบคุณภาพรายสาขา',report:'รายงานผลการตรวจ',summary:'คะแนนทุกสาขาเปรียบเทียบ'};
+  document.getElementById('page-title').textContent=titles[name]||name;
+  document.getElementById('page-sub').textContent=subs[name]||'';
+  activePage=name;
+  if(name==='dashboard') renderDashboard();
+  if(name==='audit') renderAudit();
+  if(name==='report') renderReport();
+  if(name==='summary') renderSummary();
+}
+
+// ---- DASHBOARD ----
+function renderDashboard(){
+  const scores=BRANCHES.map(b=>({b,sc:getScore(b)}));
+  const avg=Math.round(scores.reduce((a,x)=>a+x.sc.total,0)/BRANCHES.length);
+  const healthy=scores.filter(x=>x.sc.total>=85).length;
+  const warn=scores.filter(x=>x.sc.total>=70&&x.sc.total<85).length;
+  const crit=scores.filter(x=>x.sc.total<70).length;
+
+  document.getElementById('dash-stats').innerHTML=`
+    <div class="stat-card"><div class="val c-blue">${avg}%</div><div class="lbl">คะแนนเฉลี่ยทุกสาขา</div></div>
+    <div class="stat-card"><div class="val c-blue" style="color:#166534">${healthy}</div><div class="lbl">สาขา Healthy (≥85%)</div></div>
+    <div class="stat-card"><div class="val c-orange">${warn}</div><div class="lbl">สาขาต้องปรับ (70–84%)</div></div>
+    <div class="stat-card"><div class="val c-red">${crit}</div><div class="lbl">สาขาต้องลงแก้ (&lt;70%)</div></div>`;
+
+  document.getElementById('dash-branch-bars').innerHTML=scores.map(({b,sc})=>{
+    const w=sc.total;
+    const col=w>=85?'#166534':w>=70?'#d97706':'#dc2626';
+    return `<div class="bar-row">
+      <div class="bar-label">${b}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${col}"></div></div>
+      <div class="bar-num">${w}%</div>
+    </div>`;
+  }).join('');
+
+  const secAvg=SECTIONS.map((s,i)=>{
+    const avg2=Math.round(scores.reduce((a,{sc})=>a+sc.secs[i].pct,0)/BRANCHES.length);
+    return {label:s.label.split('—')[1]?.trim()||s.label,avg:avg2,color:s.color};
+  });
+  document.getElementById('dash-section-bars').innerHTML=secAvg.map(s=>`
+    <div class="bar-row">
+      <div class="bar-label" style="font-size:12px">${s.label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${s.avg}%;background:${s.color}"></div></div>
+      <div class="bar-num">${s.avg}%</div>
+    </div>`).join('');
+
+  const thead=`<tr><th>สาขา</th><th>ผู้จัดการ</th><th>วันที่</th>${SECTIONS.map(s=>`<th>${s.label.split('—')[1]?.trim()||s.label}</th>`).join('')}<th>รวม</th><th>สถานะ</th></tr>`;
+  const tbody=scores.map(({b,sc})=>`
+    <tr>
+      <td><strong>${b}</strong></td>
+      <td>${state[b].manager||'—'}</td>
+      <td>${state[b].date||'—'}</td>
+      ${sc.secs.map(s=>`<td>${s.pct}%</td>`).join('')}
+      <td><strong>${sc.total}%</strong></td>
+      <td>${statusBadge(sc.total)}</td>
+    </tr>`).join('');
+  document.getElementById('dash-table-wrap').innerHTML=`<table class="summary-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+}
+
+// ---- AUDIT ----
+function renderAudit(){
+  // Branch tabs
+  document.getElementById('branch-tabs-top').innerHTML=BRANCHES.map(b=>{
+    const sc=getScore(b);
+    const dot=sc.total>=85?'🟢':sc.total>=70?'🟡':'🔴';
+    return `<button class="branch-tab${activeBranch===b?' active':''}" onclick="switchBranch('${b}')">${dot} ${b}</button>`;
+  }).join('');
+
+  // Load data
+  const d=state[activeBranch];
+  document.getElementById('f-inspector').value=d.inspector||'';
+  document.getElementById('f-manager').value=d.manager||'';
+  document.getElementById('f-date').value=d.date||'';
+  document.getElementById('f-staff').value=d.staffCount||'';
+  document.getElementById('f-mgscore').value=d.mgScore||8;
+  document.getElementById('f-rootcause').value=d.rootCause||'';
+  document.getElementById('f-action1').value=d.action1||'';
+  document.getElementById('f-action2').value=d.action2||'';
+  document.getElementById('f-action3').value=d.action3||'';
+
+  // Render sections
+  document.getElementById('question-sections').innerHTML=SECTIONS.map(s=>{
+    const qs=s.questions.map(q=>{
+      const ans=d.answers[q.id];
+      return `<div class="q-row">
+        <div class="q-text">${q.label}${q.note?`<div class="q-note">${q.note}</div>`:''}</div>
+        <div class="q-btns">
+          <button class="qb yes${ans==='yes'?' on':''}" onclick="answer('${q.id}','yes')">✓ Yes</button>
+          <button class="qb no${ans==='no'?' on':''}" onclick="answer('${q.id}','no')">✗ No</button>
+          <button class="qb na${ans==='na'?' on':''}" onclick="answer('${q.id}','na')">N/A</button>
+        </div>
+      </div>`;
+    }).join('');
+    const sc2=getScore(activeBranch);
+    const idx=SECTIONS.indexOf(s);
+    return `<div class="section-block">
+      <div class="section-hdr">
+        <h3>${s.label} <span style="font-weight:400;color:#64748b;font-size:12px">(${s.weight}%)</span></h3>
+        <span class="section-pct">${sc2.secs[idx].pct}%</span>
+      </div>
+      <div>${qs}</div>
+    </div>`;
+  }).join('');
+
+  updateLiveScore();
+}
+
+function updateLiveScore(){
+  const sc=getScore(activeBranch);
+  const badge=document.getElementById('total-score-badge');
+  if(badge){
+    badge.textContent=sc.total+'%';
+    badge.className='status-badge '+(sc.total>=85?'s-healthy':sc.total>=70?'s-warn':'s-crit');
+  }
+  const ls=document.getElementById('live-scores');
+  if(ls) ls.innerHTML=sc.secs.map(s=>`
+    <div class="score-row">
+      <div class="slbl">${s.label.split('—')[1]?.trim()||s.label}</div>
+      <div class="sbar"><div class="sfill" style="width:${s.pct}%;background:${s.color}"></div></div>
+      <div class="snum">${s.pct}%</div>
+    </div>`).join('')+`<div style="margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between">
+      <strong style="font-size:14px">คะแนนรวม</strong>
+      <div style="display:flex;align-items:center;gap:8px"><strong style="font-size:20px">${sc.total}%</strong>${statusBadge(sc.total)}</div>
+    </div>`;
+
+  // Update section pct badges
+  document.querySelectorAll('.section-pct').forEach((el,i)=>{
+    el.textContent=sc.secs[i]?.pct+'%';
+  });
+}
+
+function answer(qid,val){
+  const cur=state[activeBranch].answers[qid];
+  state[activeBranch].answers[qid]=cur===val?null:val;
+  save();
+  // Update buttons
+  SECTIONS.forEach(s=>s.questions.forEach(q=>{
+    if(q.id!==qid) return;
+    document.querySelectorAll(`[onclick="answer('${qid}','yes')"]`).forEach(btn=>{
+      btn.className='qb yes'+(state[activeBranch].answers[qid]==='yes'?' on':'');
+    });
+    document.querySelectorAll(`[onclick="answer('${qid}','no')"]`).forEach(btn=>{
+      btn.className='qb no'+(state[activeBranch].answers[qid]==='no'?' on':'');
+    });
+    document.querySelectorAll(`[onclick="answer('${qid}','na')"]`).forEach(btn=>{
+      btn.className='qb na'+(state[activeBranch].answers[qid]==='na'?' on':'');
+    });
+  }));
+  updateLiveScore();
+}
+
+function autoSave(){
+  const b=activeBranch;
+  state[b].inspector=document.getElementById('f-inspector').value;
+  state[b].manager=document.getElementById('f-manager').value;
+  state[b].date=document.getElementById('f-date').value;
+  state[b].staffCount=document.getElementById('f-staff').value;
+  state[b].mgScore=parseInt(document.getElementById('f-mgscore').value)||8;
+  state[b].rootCause=document.getElementById('f-rootcause').value;
+  state[b].action1=document.getElementById('f-action1').value;
+  state[b].action2=document.getElementById('f-action2').value;
+  state[b].action3=document.getElementById('f-action3').value;
+  save();
+}
+
+function switchBranch(b){
+  autoSave();
+  activeBranch=b;
+  renderAudit();
+}
+
+function saveAudit(){
+  autoSave();
+  save();
+  showToast('บันทึกแล้ว ✓');
+}
+
+function clearBranch(){
+  if(!confirm('ล้างข้อมูลสาขา '+activeBranch+'?')) return;
+  SECTIONS.forEach(s=>s.questions.forEach(q=>{ state[activeBranch].answers[q.id]=null; }));
+  state[activeBranch]={inspector:'',manager:'',date:'',staffCount:'',mgScore:8,rootCause:'',action1:'',action2:'',action3:'',answers:{}};
+  SECTIONS.forEach(s=>s.questions.forEach(q=>{ state[activeBranch].answers[q.id]=null; }));
+  save();
+  renderAudit();
+  showToast('ล้างข้อมูลแล้ว');
+}
+
+// ---- REPORT ----
+function renderReport(){
+  document.getElementById('branch-tabs-report').innerHTML=BRANCHES.map(b=>{
+    const sc=getScore(b);
+    const dot=sc.total>=85?'🟢':sc.total>=70?'🟡':'🔴';
+    return `<button class="branch-tab${reportBranch===b?' active':''}" onclick="reportBranch='${b}';renderReport()">${dot} ${b}</button>`;
+  }).join('');
+
+  const b=reportBranch;
+  const d=state[b];
+  const sc=getScore(b);
+
+  let html=`<div class="report-card">
+    <h2>📋 รายงานตรวจสอบ — สาขา${b}</h2>
+    <div class="r-row"><span class="r-key">ผู้ตรวจ</span><span class="r-val">${d.inspector||'—'}</span></div>
+    <div class="r-row"><span class="r-key">ผู้จัดการ</span><span class="r-val">${d.manager||'—'}</span></div>
+    <div class="r-row"><span class="r-key">วันที่</span><span class="r-val">${d.date||'—'}</span></div>
+    <div class="r-row"><span class="r-key">จำนวนพนักงาน</span><span class="r-val">${d.staffCount||'—'} คน</span></div>
+    <div class="r-row"><span class="r-key">Manager Score</span><span class="r-val">${d.mgScore||8}/10</span></div>
+    <div class="r-row"><span class="r-key">คะแนนรวม</span><span class="r-val">${sc.total}% ${statusBadge(sc.total)}</span></div>
+  </div>`;
+
+  SECTIONS.forEach((s,i)=>{
+    const qs=s.questions.map(q=>{
+      const ans=d.answers[q.id];
+      const cl=ans==='yes'?'r-yes':ans==='no'?'r-no':'r-na';
+      const icon=ans==='yes'?'✓ Yes':ans==='no'?'✗ No':ans==='na'?'N/A':'—';
+      return `<div class="r-row"><span class="r-key">${q.label}</span><span class="r-val ${cl}">${icon}</span></div>`;
+    }).join('');
+    html+=`<div class="report-card">
+      <h2>${s.label} — <span style="color:${s.color}">${sc.secs[i].pct}%</span></h2>
+      ${qs}
+    </div>`;
+  });
+
+  if(d.rootCause||d.action1||d.action2||d.action3){
+    html+=`<div class="report-card"><h2>🔍 Root Cause & Action Plan</h2>
+      ${d.rootCause?`<div class="r-row"><span class="r-key">Root Cause</span><span class="r-val">${d.rootCause}</span></div>`:''}
+      ${d.action1?`<div class="r-row"><span class="r-key">Action 1</span><span class="r-val">${d.action1}</span></div>`:''}
+      ${d.action2?`<div class="r-row"><span class="r-key">Action 2</span><span class="r-val">${d.action2}</span></div>`:''}
+      ${d.action3?`<div class="r-row"><span class="r-key">Action 3</span><span class="r-val">${d.action3}</span></div>`:''}
+    </div>`;
+  }
+
+  html+=`<div style="display:flex;gap:10px;margin-top:4px">
+    <button class="btn primary" onclick="printReport()">🖨 พิมพ์รายงาน</button>
+    <button class="btn" onclick="copyReportFull()">📋 คัดลอกข้อความ</button>
+  </div>`;
+
+  document.getElementById('report-content').innerHTML=html;
+}
+
+function printReport(){
+  window.print();
+}
+
+function copyReportFull(){
+  const b=reportBranch;
+  const d=state[b];
+  const sc=getScore(b);
+  const lines=[`📋 รายงานตรวจสอบ สาขา${b}`,`วันที่: ${d.date||'—'}  ผู้ตรวจ: ${d.inspector||'—'}`,`ผู้จัดการ: ${d.manager||'—'}  พนักงาน: ${d.staffCount||'—'} คน`,`Manager Score: ${d.mgScore||8}/10`,`คะแนนรวม: ${sc.total}%`,`สถานะ: ${sc.total>=85?'🟢 Healthy':sc.total>=70?'🟡 ต้องปรับ':'🔴 ต้องลงแก้'}`,``];
+  SECTIONS.forEach((s,i)=>{
+    lines.push(`${s.label}: ${sc.secs[i].pct}%`);
+  });
+  if(d.rootCause) lines.push(`\nRoot Cause: ${d.rootCause}`);
+  if(d.action1) lines.push(`Action 1: ${d.action1}`);
+  if(d.action2) lines.push(`Action 2: ${d.action2}`);
+  if(d.action3) lines.push(`Action 3: ${d.action3}`);
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>showToast('คัดลอกแล้ว ✓')).catch(()=>showToast('ไม่สามารถคัดลอกได้'));
+}
+
+function copyReport(){
+  autoSave();
+  const b=activeBranch;
+  const d=state[b];
+  const sc=getScore(b);
+  const lines=[`📋 รายงานตรวจสอบ สาขา${b}`,`วันที่: ${d.date||'—'}  ผู้ตรวจ: ${d.inspector||'—'}`,`คะแนนรวม: ${sc.total}% ${sc.total>=85?'🟢':sc.total>=70?'🟡':'🔴'}`];
+  SECTIONS.forEach((s,i)=>lines.push(`${s.label.split('—')[1]?.trim()}: ${sc.secs[i].pct}%`));
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>showToast('คัดลอกแล้ว ✓')).catch(()=>showToast('ลองใหม่'));
+}
+
+// ---- SUMMARY ----
+function renderSummary(){
+  const scores=BRANCHES.map(b=>({b,sc:getScore(b),d:state[b]}));
+  scores.sort((a,b2)=>b2.sc.total-a.sc.total);
+  let html=scores.map(({b,sc,d},rank)=>`
+    <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:12px;border:1px solid #e2e8f0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:22px;font-weight:700;color:#94a3b8">#${rank+1}</div>
+          <div><div style="font-size:15px;font-weight:700">${b}</div><div style="font-size:12px;color:#64748b">${d.manager?'ผู้จัดการ: '+d.manager:''} ${d.date?'| '+d.date:''}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:26px;font-weight:700">${sc.total}%</div>
+          ${statusBadge(sc.total)}
+        </div>
+      </div>
+      ${sc.secs.map(s=>`<div class="score-row">
+        <div class="slbl">${s.label.split('—')[1]?.trim()||s.label}</div>
+        <div class="sbar"><div class="sfill" style="width:${s.pct}%;background:${s.color}"></div></div>
+        <div class="snum">${s.pct}%</div>
+      </div>`).join('')}
+    </div>`).join('');
+  document.getElementById('summary-content').innerHTML=html;
+}
+
+// ---- EXPORT ----
+function exportHTML(){
+  const src=document.documentElement.outerHTML;
+  const blob=new Blob([src],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`rainykids_audit_${new Date().toISOString().slice(0,10)}.html`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('ดาวน์โหลดแล้ว ✓');
+}
+
+// INIT
+renderDashboard();
+</script>
+</body>
+</html>
